@@ -1,6 +1,9 @@
 from fastapi.testclient import TestClient
 from app.main import app
+from app.schemas.user_schema import UserCreate, UserResponse, UserUpdate
 from app.core.db import users_db
+from datetime import datetime, timezone
+from uuid import uuid4
 import pytest
 
 client = TestClient(app)
@@ -59,7 +62,6 @@ def test_update_user():
     )
     assert created_response.status_code == 201
     user_id = created_response.json()["id"]
-
     update_response = client.put(
         f"/api/v1/users/{user_id}",
         json={
@@ -74,3 +76,25 @@ def test_update_user():
     assert data["name"] == "millie cyprus"
     assert data["email"] == "millie.cyprus@aol.com"
     assert data["role"] == "admin"
+
+
+def test_delete_user_success():  
+    user_id = uuid4() 
+    user = UserResponse( 
+        id=user_id, 
+        name="John Doe", 
+        email="john@example.com", 
+        role="student", 
+        created_at=datetime.now(timezone.utc), 
+        updated_at=datetime.now(timezone.utc) 
+    ) 
+    users_db[user_id] = user 
+    response = client.delete(f"/api/v1/users/{user_id}")
+    assert response.status_code == 200
+    assert user_id not in users_db
+
+def test_delete_user_not_found():  
+    non_existent_id = uuid4()
+    response = client.delete(f"/users/{non_existent_id}") 
+    assert response.status_code == 404 
+    assert response.json()["detail"] == "Not Found"

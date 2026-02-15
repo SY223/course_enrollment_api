@@ -55,6 +55,13 @@ def partial_update_user(user_id: UUID, user_update: UserUpdate):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred")
 
 #Delete a User
-
+@user_router.delete("/{user_id}")
+def delete_user(user_id: UUID):
+    try:
+        return UserService.delete_user(user_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An unexpected error occurred")
 
     
