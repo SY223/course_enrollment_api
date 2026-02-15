@@ -14,6 +14,9 @@ class UserBase(BaseModel):
     email: EmailStr
     role: UserRole
 
+class UserCreate(UserBase):
+    pass
+
     @field_validator("name") 
     def normalize_name(cls, value): 
         return value.strip().lower() 
@@ -21,9 +24,6 @@ class UserBase(BaseModel):
     @field_validator("email") 
     def normalize_email(cls, value): 
         return value.strip().lower()
-
-class UserCreate(UserBase):
-    pass
 
 class UserResponse(UserBase):
     id: UUID
@@ -34,5 +34,13 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None 
     email: Optional[EmailStr] = None 
     role: Optional[UserRole] = None
+
+    @field_validator("name") 
+    def normalize_name(cls, value): 
+        return value.strip().lower() 
+        
+    @field_validator("email") 
+    def normalize_email(cls, value): 
+        return value.strip().lower()
 
 

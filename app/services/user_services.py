@@ -11,6 +11,8 @@ class UserService:
             raise ValueError("Name is required") 
         if not user_create.email:  # type: ignore
             raise ValueError("Email is required")
+        if not user_create.role or not user_create.role.strip():
+            raise ValueError("role cannot be empty")
         if user_create.role not in ("student", "admin"):  # type: ignore
             raise ValueError("Invalid role")
         for u in users_db.values():

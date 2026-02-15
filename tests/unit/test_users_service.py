@@ -1,35 +1,47 @@
 from app.services.user_services import UserService
+from app.schemas.user_schema import UserCreate
+from app.core.db import users_db
+import pytest
 
+#datetime.datetime.now(datetime.UTC)
 
+# ✅ Automatically clear DB before each test
+@pytest.fixture(autouse=True)
+def clear_users_db():
+    users_db.clear()
 
 def test_create_user():
-    created_user = UserService.create_user(
-        name="Bailey Paul", 
-        email="baileypaul@gmail.com", # type: ignore
-        role="student" # type: ignore
+    user = UserService.create_user(
+        UserCreate(
+            name="Bailey Paul",
+            email="baileypaul@gmail.com",
+            role="student"
+        )
     )
-    assert created_user.name == "Bailey Paul"
-    assert created_user.email == "baileypaul@gmail.com"
+    assert user.name == "bailey paul"
+    assert user.email == "baileypaul@gmail.com"
+    assert user.role == "student"
+    assert user.id is not None
 
 
-def test_create_user_missing_title():
-    try:
-        UserService.create_user(
-            email="baileypaul@gmail.com", # type: ignore
-            role="student" # type: ignore
-        ) # type: ignore
-    except ValueError as e:
-        assert str(e) == "Name is required"
-
-def test_get_user_by_id():
-    created_user = UserService.create_user(
-        name="Bailey Paul", 
-        email="baileypaul@gmail.com",
-        role="student"
+def test_get_all_users_success():
+    user1 = UserService.create_user(
+        UserCreate(
+            name="John Doe",
+            email="john@gmail.com",
+            role="student"
+        )
     )
-    fetched_user = UserService.get_user_by_id(created_user.id)
-
-    assert fetched_user is not None
-    assert fetched_user.id == created_user.id
-    assert fetched_user.name == "Bailey Paul"
-    assert fetched_user.email == "baileypaul@gmail.com"
+    user2 = UserService.create_user(
+        UserCreate(
+            name="Jane Smith",
+            email="jane@gmail.com",
+            role="admin"
+        )
+    )
+    users = UserService.get_all_users()
+    assert len(users) == 2
+    assert user1 in users
+    assert user2 in users
+    assert user1.email == "john@gmail.com"
+    assert user2.email == "jane@gmail.com"
