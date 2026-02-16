@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException
 from uuid import uuid4, UUID
-from typing import List
+from typing import List, Dict
 from app.core.db import users_db, courses_db, enrollments_db
 from app.schemas.enrollment_schema import EnrollmentCreate, EnrollmentDetails, EnrollmentResponse, EnrollmentRequest
 from app.api.deps import is_student_user
@@ -30,60 +30,46 @@ class EnrollmentService:
             enrolled_on=datetime.now(timezone.utc)
         )
         enrollments_db[enrollment_in_db.id] = enrollment_in_db
-        enrollment_details = EnrollmentDetails(
-            id=new_id,
-            student=user,
-            course=course,
-            enrolled_on=datetime.now(timezone.utc)
-        )
-        return enrollment_details
+        return enrollment_in_db
 
     @staticmethod
     def retrieve_student_enrollments(user_id: UUID) -> List[CourseResponse]:
+        user = users_db.get(user_id) 
+        if not user: 
+            raise ValueError("User does not exist") 
+        if user.role != UserRole.STUDENT: 
+            raise ValueError("Only students can enroll in courses") 
+        results: List[EnrollmentResponse] = [] 
+        # Loop through all enrollments 
+        for enrollment in enrollments_db.values():
+            if str(enrollment.user_id) != str(user_id): 
+                continue 
+            results.append(enrollment)
+        if not results:
+            raise ValueError("No enrollments found.")
+        return results # type: ignore
+
+    @staticmethod
+    def student_deregister(user_id: UUID, course_id: UUID):
         user = users_db.get(user_id)
         if not user:
             raise ValueError("User does not exist")
-        if user.role != UserRole.STUDENT:
-            raise ValueError("Only students can enroll in courses")
-        results: List[Dict] = []
-        for enrollment_id, enrollment in enrollments_db.items():
-            if isinstance(enrollment, dict): 
-                stored_user_id = enrollment.get("user_id") 
-                stored_course_id = enrollment.get("course_id")
-            else:
-                stored_user_id = getattr(enrollment, "user_id", None) 
-                stored_course_id = getattr(enrollment, "course_id", None)
-            if stored_user_id is None or str(stored_user_id) != str(user_id):
-                continue
-            course = courses_db.get(stored_course_id) or courses_db.get(str(stored_course_id)) 
-            if not course: 
-                continue
-            results.append({
-                "enrollment_id": enrollment_id,
-                "course": course
-            })
-        if not results:
-            raise ValueError("No enrollments found")
-        return results
-
-    @staticmethod
-    def student_deregister(
-        user_id: UUID,
-        course_id: UUID,
-        role=Depends(is_student_user)
-    ):
-        user = users_db.get(user_id)
-        if not user:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User does not exist")
         
         course = courses_db.get(course_id)
-        for e in enrollments_db.values():
-            if e.user_id != user_id and e.course_id!=course_id:
-                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You are not enrolled on this course")
-            del enrollments_db[e.id]
-            return {
-                "message": "Successfully deregister from the course."
-            }
+        if not course:
+            raise ValueError("Course does not exist")
+        enrollment_to_delete = None
+
+        for enrollment_id, enrollment in enrollments_db.items(): 
+            if enrollment.user_id == user_id and enrollment.course_id == course_id: 
+                enrollment_to_delete = enrollment_id 
+                break
+        if not enrollment_to_delete: 
+            raise ValueError("Enrollment not found")
+        del enrollments_db[enrollment_to_delete]
+        return {
+            "message": "Successfully deregister from the course."
+        }
         
     @staticmethod
     def admin_retrieve_enrollments() -> List[EnrollmentDetails]:
@@ -99,6 +85,8 @@ class EnrollmentService:
                 course=course, 
                 enrolled_on=enrollment.enrolled_on
             ))
+        if not results:
+            raise ValueError("No enrollments found.")
         return results
     
     @staticmethod
@@ -121,6 +109,8 @@ class EnrollmentService:
                     enrolled_on=enrollment.enrolled_on
                 )
             )
+        if not results:
+            raise ValueError(f"No enrollments found for this course {course.title}.")
         return results
 
     @staticmethod
@@ -135,7 +125,8 @@ class EnrollmentService:
         for enrollment in list(enrollments_db.values()):
             if enrollment.user_id == user_id and enrollment.course_id == course_id:
                 del enrollments_db[enrollment.id]
-                return {"message": "Student successfully deregistered by admin."}
+            return {"message": "Student successfully deregistered by admin."}
+
         raise ValueError("Enrollment not found")
 
 
