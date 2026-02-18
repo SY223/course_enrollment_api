@@ -35,10 +35,10 @@ uvicorn app.main:app --reload
 FastAPI automatically generates Swagger documentation.
 
 - Swagger UI:  
-  👉 `http://127.0.0.1:8000/docs` [(127.0.0.1 in Bing)](https://www.bing.com/search?q="http%3A%2F%2F127.0.0.1%3A8000%2Fdocs")
+  👉 `http://127.0.0.1:8000/docs` [(127.0.0.1)](https://www.bing.com/search?q="http%3A%2F%2F127.0.0.1%3A8000%2Fdocs")
 
 - ReDoc:  
-  👉 `http://127.0.0.1:8000/redoc` [(127.0.0.1 in Bing)](https://www.bing.com/search?q="http%3A%2F%2F127.0.0.1%3A8000%2Fredoc")
+  👉 `http://127.0.0.1:8000/redoc` [(127.0.0.1)](https://www.bing.com/search?q="http%3A%2F%2F127.0.0.1%3A8000%2Fredoc")
 
 ---
 
